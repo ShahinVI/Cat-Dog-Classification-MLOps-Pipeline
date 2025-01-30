@@ -1,0 +1,1 @@
+{"label_list": ["cats", "dogs"], "splits": {"train": 70, "valid": 20, "test": 10}, "image_size": 128, "augmentations": {"rotate_90": false, "rotate_180": false, "rotate_270": false, "greyscale": false}, "processed_images": 7096, "total_images": 7098, "failed_images": 2}

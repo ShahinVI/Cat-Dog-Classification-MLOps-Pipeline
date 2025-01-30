@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Local Training</title>
+    <style>
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #4a5568;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: #f7fafc;
+            color: #2d3748;
+        }
+
+        .nav-link.active {
+            background: #ebf8ff;
+            color: #3182ce;
+        }
+
+        .main-content {
+            margin-top: 5rem;
+            min-height: calc(100vh - 5rem);
+            background: #f7fafc;
+            padding: 2rem;
+        }
+
+        .training-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .training-controls {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+
+        .metrics-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+
+        .status-message {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status-success {
+            background-color: #def7ec;
+            color: #03543f;
+        }
+
+        .status-error {
+            background-color: #fde8e8;
+            color: #9b1c1c;
+        }
+
+        .status-progress {
+            background-color: #ebf8ff;
+            color: #2c5282;
+        }
+
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .metrics-table th,
+        .metrics-table td {
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        .metrics-table th {
+            background: #f8fafc;
+            font-weight: 500;
+        }
+
+        .start-training-btn {
+            background: #4299e1;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .start-training-btn:hover {
+            background: #3182ce;
+        }
+
+        .start-training-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <header class="nav-header">
+        <div class="nav-title">Cat & Dog Dataset Manager</div>
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Upload Images</a>
+            <a href="/preprocess" class="nav-link">Preprocess Dataset</a>
+            <a href="/local_training" class="nav-link active">Local Training</a>
+            <a href="/pipeline" class="nav-link">Pipeline Manager</a>
+            <a href="/predict_manage" class="nav-link">Predict & Manage</a>
+        </nav>
+    </header>
+
+    <div class="main-content">
+        <div class="training-container">
+            <h2>Local Model Training</h2>
+            
+            <div class="training-controls">
+                <button id="startTrainingBtn" class="start-training-btn" onclick="startTraining()">
+                    Start Training
+                </button>
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+
+            <div class="metrics-container">
+                <h3>Training Metrics</h3>
+                <table class="metrics-table">
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td id="trainingStatus">Not started</td>
+                    </tr>
+                    <tr>
+                        <td>Training Accuracy</td>
+                        <td id="accuracy">-</td>
+                    </tr>
+                    <tr>
+                        <td>Validation Accuracy</td>
+                        <td id="valAccuracy">-</td>
+                    </tr>
+                    <tr>
+                        <td>Test Accuracy</td>
+                        <td id="testAccuracy">-</td>
+                    </tr>
+                    <tr>
+                        <td>Training Loss</td>
+                        <td id="loss">-</td>
+                    </tr>
+                    <tr>
+                        <td>Validation Loss</td>
+                        <td id="valLoss">-</td>
+                    </tr>
+                    <tr>
+                        <td>Test Loss</td>
+                        <td id="testLoss">-</td>
+                    </tr>
+                    <tr>
+                        <td>Model Path</td>
+                        <td id="modelPath">-</td>
+                    </tr>
+                    <tr>
+                        <td>Last Updated</td>
+                        <td id="timestamp">-</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function startTraining() {
+            const statusMessage = document.getElementById('statusMessage');
+            const startButton = document.getElementById('startTrainingBtn');
+            
+            // Disable the button and show progress
+            startButton.disabled = true;
+            statusMessage.style.display = 'block';
+            statusMessage.className = 'status-message status-progress';
+            statusMessage.textContent = 'Starting training...';
+            
+            fetch('/start-local-training', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    statusMessage.className = 'status-message status-progress';
+                    statusMessage.textContent = 'Training in progress...';
+                    // Start polling for status
+                    pollTrainingStatus();
+                } else {
+                    throw new Error(data.error || 'Failed to start training');
+                }
+            })
+            .catch(error => {
+                startButton.disabled = false;
+                statusMessage.className = 'status-message status-error';
+                statusMessage.textContent = 'Error: ' + error.message;
+            });
+        }
+
+        function pollTrainingStatus() {
+            fetch('/training-status')
+                .then(response => response.json())
+                .then(data => {
+                    updateMetricsDisplay(data);
+                    
+                    if (data.status === 'completed') {
+                        onTrainingComplete(data);
+                    } else if (data.status === 'failed') {
+                        onTrainingFailed(data);
+                    } else if (data.status !== 'not_started') {
+                        // Continue polling if training is still in progress
+                        setTimeout(pollTrainingStatus, 5000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error polling status:', error);
+                });
+        }
+
+        function updateMetricsDisplay(data) {
+            document.getElementById('trainingStatus').textContent = data.status;
+            
+            if (data.metrics) {
+                // Training metrics
+                document.getElementById('accuracy').textContent = 
+                    (data.metrics.accuracy * 100).toFixed(2) + '%';
+                document.getElementById('loss').textContent = 
+                    data.metrics.loss.toFixed(4);
+                    
+                // Validation metrics
+                document.getElementById('valAccuracy').textContent = 
+                    (data.metrics.val_accuracy * 100).toFixed(2) + '%';
+                document.getElementById('valLoss').textContent = 
+                    data.metrics.val_loss.toFixed(4);
+                    
+                // Test metrics (if available)
+                if (data.metrics.test_accuracy !== undefined) {
+                    document.getElementById('testAccuracy').textContent = 
+                        (data.metrics.test_accuracy * 100).toFixed(2) + '%';
+                }
+                if (data.metrics.test_loss !== undefined) {
+                    document.getElementById('testLoss').textContent = 
+                        data.metrics.test_loss.toFixed(4);
+                }
+            }
+            
+            if (data.model_path) {
+                document.getElementById('modelPath').textContent = data.model_path;
+            }
+            
+            if (data.timestamp) {
+                document.getElementById('timestamp').textContent = 
+                    new Date(data.timestamp).toLocaleString();
+            }
+        }
+
+        function onTrainingComplete(data) {
+            const statusMessage = document.getElementById('statusMessage');
+            const startButton = document.getElementById('startTrainingBtn');
+            
+            startButton.disabled = false;
+            statusMessage.className = 'status-message status-success';
+            statusMessage.textContent = 'Training completed successfully!';
+        }
+
+        function onTrainingFailed(data) {
+            const statusMessage = document.getElementById('statusMessage');
+            const startButton = document.getElementById('startTrainingBtn');
+            
+            startButton.disabled = false;
+            statusMessage.className = 'status-message status-error';
+            statusMessage.textContent = 'Training failed: ' + (data.error || 'Unknown error');
+        }
+
+        // Initialize by checking current status
+        pollTrainingStatus();
+    </script>
+</body>
+</html>

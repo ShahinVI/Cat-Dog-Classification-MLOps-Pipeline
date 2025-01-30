@@ -1,0 +1,14 @@
+flask
+fastapi 
+uvicorn 
+google-cloud-storage
+google-cloud-secret-manager
+pymysql
+python-multipart
+tensorflow 
+opencv-python
+kfp 
+google-cloud-aiplatform
+mysql-connector-python
+SQLAlchemy
+scipy

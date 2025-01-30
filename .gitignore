@@ -1,0 +1,45 @@
+# 🔹 Ignore Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+*.env
+
+# 🔹 Ignore Google Cloud credentials
+json_files/cat-dog-fastapi-sa-key.json
+
+# 🔹 Ignore dataset files (but keep metadata.json)
+dataset/train/
+dataset/test/
+dataset/valid/
+
+# 🔹 Ignore large machine learning models (except best directory structure)
+local_models/
+!local_models/best/
+
+# 🔹 Ignore temporary images and logs
+temp_images/
+logs/
+*.log
+
+# 🔹 Ignore compiled Python files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# 🔹 Ignore editor & OS-specific files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.bak
+*.swp
+*.swo
+
+# 🔹 Ignore personal & system-specific configs
+config.json

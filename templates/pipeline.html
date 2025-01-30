@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vertex AI Pipeline Manager</title>
+    <style>
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #4a5568;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: #f7fafc;
+            color: #2d3748;
+        }
+
+        .nav-link.active {
+            background: #ebf8ff;
+            color: #3182ce;
+        }
+
+        .main-content {
+            margin-top: 5rem;
+            min-height: calc(100vh - 5rem);
+            background: #f7fafc;
+            padding: 2rem;
+        }
+
+        .pipeline-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        button, input {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #4299e1;
+            color: white;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #3182ce;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .success-message {
+            color: #38a169;
+            background-color: #f0fff4;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .error-message {
+            color: #e53e3e;
+            background-color: #fff5f5;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .file-input-container {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 4px;
+        }
+
+        .actions-container {
+            margin: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <header class="nav-header">
+        <div class="nav-title">Cat & Dog Dataset Manager</div>
+        <nav class="nav-links">
+            <a href="/" class="nav-link">Upload Images</a>
+            <a href="/preprocess" class="nav-link">Preprocess Dataset</a>
+            <a href="/local_training" class="nav-link">Local Training</a>
+            <a href="/pipeline" class="nav-link active">Pipeline Manager</a>
+            <a href="/predict_manage" class="nav-link">Predict & Manage</a>
+        </nav>
+    </header>
+
+    <div class="main-content">
+        <div class="pipeline-container">
+            <h2>Vertex AI Pipeline Manager</h2>
+
+            <div class="file-input-container">
+                <h3>Upload Pipeline</h3>
+                <input type="file" id="pipelineFile" accept=".py">
+                <button onclick="uploadPipeline()">Upload & Compile Pipeline</button>
+            </div>
+
+            <div class="actions-container">
+                <h3>Pipeline Actions</h3>
+                <button onclick="startTraining()">Start Training Pipeline</button>
+                <button onclick="evaluateModel()">Evaluate Latest Model</button>
+            </div>
+
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        function uploadPipeline() {
+            const fileInput = document.getElementById('pipelineFile');
+            if (!fileInput.files.length) {
+                alert("Please select a Python pipeline file first.");
+                return;
+            }
+    
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+    
+            document.getElementById('status').innerText = "Uploading and compiling pipeline...";
+    
+            fetch('/upload-pipeline', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    document.getElementById('status').innerHTML = `
+                        <div class="success-message">
+                            <p><b>✅ ${data.message}</b></p>
+                            <p><b>Uploaded File:</b> ${data.file_uploaded}</p>
+                            <p><b>Stored at:</b> ${data.storage_path}</p>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('status').innerHTML = `
+                        <div class="error-message">
+                            <p><b>Error:</b> ${data.error}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('status').innerHTML = `
+                    <div class="error-message">
+                        <p>Failed to upload pipeline. Check console for details.</p>
+                    </div>
+                `;
+            });
+        }
+    
+        function startTraining() {
+            document.getElementById('status').innerText = "Starting training pipeline...";
+            fetch('/start-training', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').innerHTML = `
+                    <div class="success-message">
+                        <p><b>${data.message}</b></p>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('status').innerHTML = `
+                    <div class="error-message">
+                        <p>Failed to start training. Check console for details.</p>
+                    </div>
+                `;
+            });
+        }
+
+        function evaluateModel() {
+            document.getElementById('status').innerText = "Starting model evaluation...";
+            fetch('/evaluate-model', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').innerHTML = `
+                    <div class="success-message">
+                        <p><b>${data.message}</b></p>
+                        <p>Job ID: ${data.job_id}</p>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('status').innerHTML = `
+                    <div class="error-message">
+                        <p>Failed to start evaluation. Check console for details.</p>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

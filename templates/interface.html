@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #4a5568;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: #f7fafc;
+            color: #2d3748;
+        }
+
+        .nav-link.active {
+            background: #ebf8ff;
+            color: #3182ce;
+        }
+
+        .main-content {
+            margin-top: 5rem;
+            min-height: calc(100vh - 5rem);
+            background: #f7fafc;
+            padding: 2rem;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+
+        .upload-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+        }
+
+        select, input[type="file"], input[type="submit"] {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+
+        #file-list {
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        .file-name {
+            margin: 5px 0;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+
+        .loading-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            margin: 20px auto;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background: #4CAF50;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        .results-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: 80vh;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-status {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+        }
+
+        .file-success {
+            background-color: #dff0d8;
+            border-left: 4px solid #3c763d;
+        }
+
+        .file-error {
+            background-color: #f2dede;
+            border-left: 4px solid #a94442;
+        }
+
+        .summary {
+            font-weight: bold;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        .upload-summary {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .failed-uploads {
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .error-header {
+            background: #f8d7da;
+            padding: 10px;
+            position: sticky;
+            top: 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .error-list {
+            padding: 10px;
+        }
+
+        .error-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<div class="main-content">
+<body>
+    <header class="nav-header">
+        <div class="nav-title">Cat & Dog Dataset Manager</div>
+        <nav class="nav-links">
+            <a href="/" class="nav-link active">Upload Images</a>
+            <a href="/preprocess" class="nav-link">Preprocess Dataset</a>
+            <a href="/local_training" class="nav-link">Local Training</a>
+            <a href="/pipeline" class="nav-link">Pipeline Manager</a>
+            <a href="/predict_manage" class="nav-link">Predict & Manage</a>
+        </nav>
+    </header>
+    <div class="upload-container">
+        <h2>Upload Pet Images</h2>
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+            <select name="category" required>
+                <option value="cats">Cats</option>
+                <option value="dogs">Dogs</option>
+            </select>
+            <input type="file" name="files[]" accept="image/*" multiple required>
+            <div id="file-list"></div>
+            <input type="submit" value="Upload">
+        </form>
+        <div id="message"></div>
+    </div>
+    <div class="loading-overlay">
+        <div class="loading-content">
+            <h3>Uploading Files...</h3>
+            <div class="progress-bar">
+                <div class="progress"></div>
+            </div>
+            <p id="progress-text">0/0 files uploaded</p>
+        </div>
+    </div>
+
+    <script>
+        const path = window.location.pathname;
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.getAttribute('href') === path) {
+                link.classList.add('active');
+            }
+        });
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const files = e.target.querySelector('input[type="file"]').files;
+        const category = e.target.querySelector('select').value;
+        
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
+        let successCount = 0;
+        let failedUploads = [];
+        
+        const loading = document.querySelector('.loading-overlay');
+        const progress = document.querySelector('.progress');
+        const progressText = document.getElementById('progress-text');
+        loading.style.display = 'block';
+        
+        for (let i = 0; i < files.length; i++) {
+            const formData = new FormData();
+            formData.append('file', files[i]);
+            formData.append('category', category);
+
+            try {
+                const response = await fetch('/upload_file', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    successCount++;
+                } else {
+                    failedUploads.push({
+                        name: result.filename,
+                        error: result.error
+                    });
+                }
+            } catch (error) {
+                failedUploads.push({
+                    name: files[i].name,
+                    error: 'Network error'
+                });
+            }
+
+            const percentComplete = ((i + 1) / files.length) * 100;
+            progress.style.width = `${percentComplete}%`;
+            progressText.textContent = `${i + 1}/${files.length} files uploaded`;
+        }
+
+        loading.style.display = 'none';
+        
+        resultsDiv.innerHTML = `
+            <div class="upload-summary">
+                <h3>Completed: ${successCount}/${files.length} files uploaded successfully</h3>
+            </div>
+            ${failedUploads.length > 0 ? `
+                <div class="failed-uploads">
+                    <div class="error-header">
+                        <h4>Failed Uploads (${failedUploads.length})</h4>
+                    </div>
+                    <div class="error-list">
+                        ${failedUploads.slice(0, 50).map(f => `
+                            <div class="error-item">
+                                ✗ ${f.name}<br>
+                                <small>${f.error}</small>
+                            </div>
+                        `).join('')}
+                        ${failedUploads.length > 50 ? 
+                            `<div class="error-item">... and ${failedUploads.length - 50} more errors</div>` 
+                            : ''}
+                    </div>
+                </div>
+            ` : ''}
+        `;
+        
+        e.target.reset();
+        document.getElementById('file-list').innerHTML = '';
+        };
+    </script>
+    
+    <!-- Add this after your form -->
+    <div class="results-container">
+        <div id="results"></div>
+    </div>
+</body>
+</div>
+</html>

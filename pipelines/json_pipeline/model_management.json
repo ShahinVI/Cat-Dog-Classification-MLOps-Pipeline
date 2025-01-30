@@ -1,0 +1,139 @@
+{
+  "components": {
+    "comp-compare-and-save-best": {
+      "executorLabel": "exec-compare-and-save-best",
+      "inputDefinitions": {
+        "artifacts": {
+          "metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "new_model": {
+            "artifactType": {
+              "schemaTitle": "system.Model",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    },
+    "comp-get-latest-model": {
+      "executorLabel": "exec-get-latest-model",
+      "outputDefinitions": {
+        "artifacts": {
+          "metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "model": {
+            "artifactType": {
+              "schemaTitle": "system.Model",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    }
+  },
+  "defaultPipelineRoot": "gs://original-dataset-cat-dog/pipelines",
+  "deploymentSpec": {
+    "executors": {
+      "exec-compare-and-save-best": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "compare_and_save_best"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef compare_and_save_best(new_model: Input[Model], metrics: Input[Metrics]):\n    \"\"\"Compares the new model with the best and updates if better.\"\"\"\n    import json\n    from google.cloud import storage\n\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(BUCKET_NAME)\n\n    # Get new model metrics\n    new_accuracy = metrics.metadata.get('val_accuracy', metrics.metadata.get('accuracy', 0))\n    best_model_path = \"models/best/model.keras\"\n    best_metrics_path = \"models/best/metrics.json\"\n\n    # Load best model metrics if exists\n    try:\n        blob = bucket.blob(best_metrics_path)\n        best_metrics_data = json.loads(blob.download_as_string())\n        best_accuracy = best_metrics_data.get('val_accuracy', best_metrics_data.get('accuracy', 0))\n    except Exception as e:\n        print(f\"No existing best model found: {str(e)}\")\n        best_accuracy = 0\n\n    print(f\"New Model Accuracy: {new_accuracy}, Best Model Accuracy: {best_accuracy}\")\n\n    if new_accuracy > best_accuracy:\n        print(\"New model is better! Updating best model...\")\n\n        # Copy model file\n        new_model_path = new_model.uri.replace(f\"gs://{BUCKET_NAME}/\", \"\")\n        source_blob = bucket.blob(new_model_path)\n        bucket.copy_blob(source_blob, bucket, best_model_path)\n\n        # Update metrics\n        metrics_blob = bucket.blob(best_metrics_path)\n        metrics_data = {k: v for k, v in metrics.metadata.items()}\n        metrics_blob.upload_from_string(json.dumps(metrics_data))\n\n        print(\"Best model updated successfully\")\n    else:\n        print(\"Current best model remains superior\")\n\n"
+          ],
+          "image": "python:3.9"
+        }
+      },
+      "exec-get-latest-model": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "get_latest_model"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'kfp==2.11.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef get_latest_model(model: Output[Model], metrics: Output[Metrics]):\n    \"\"\"Gets the latest model from the models directory.\"\"\"\n    from google.cloud import storage\n    import json\n    from datetime import datetime\n\n    storage_client = storage.Client()\n    bucket = storage_client.bucket(BUCKET_NAME)\n\n    # List all model directories\n    model_dirs = []\n    for blob in bucket.list_blobs(prefix=\"models/\"):\n        if blob.name.endswith('/model.keras'):\n            model_dir = blob.name.split('/model.keras')[0]\n            model_dirs.append(model_dir)\n\n    if not model_dirs:\n        raise Exception(\"No models found in the bucket\")\n\n    # Get the latest model directory (sorted by timestamp)\n    latest_model_dir = sorted(model_dirs)[-1]\n    model.uri = f\"gs://{BUCKET_NAME}/{latest_model_dir}/model.keras\"\n\n    # Get the metrics for this model\n    metrics_blob = bucket.blob(f\"{latest_model_dir}/metrics.json\")\n    metrics_data = json.loads(metrics_blob.download_as_string())\n\n    for key, value in metrics_data.items():\n        metrics.log_metric(key, value)\n\n    print(f\"Found latest model: {model.uri}\")\n    print(f\"Model metrics: {metrics_data}\")\n\n"
+          ],
+          "image": "python:3.9"
+        }
+      }
+    }
+  },
+  "pipelineInfo": {
+    "name": "model-management-pipeline"
+  },
+  "root": {
+    "dag": {
+      "tasks": {
+        "compare-and-save-best": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-compare-and-save-best"
+          },
+          "dependentTasks": [
+            "get-latest-model"
+          ],
+          "inputs": {
+            "artifacts": {
+              "metrics": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "metrics",
+                  "producerTask": "get-latest-model"
+                }
+              },
+              "new_model": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "model",
+                  "producerTask": "get-latest-model"
+                }
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "compare-and-save-best"
+          }
+        },
+        "get-latest-model": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-get-latest-model"
+          },
+          "taskInfo": {
+            "name": "get-latest-model"
+          }
+        }
+      }
+    }
+  },
+  "schemaVersion": "2.1.0",
+  "sdkVersion": "kfp-2.11.0"
+}
