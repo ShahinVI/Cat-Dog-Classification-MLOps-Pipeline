@@ -11,7 +11,7 @@ This project implements a **complete MLOps pipeline**, including:
 - **🌐 Web interface** for **image uploads, predictions, and validation**
 - **📊 Training options**:
   - **Local training** (on your machine)
-  - **Cloud training** using **Vertex AI**
+  - **Cloud training** using **Vertex AI** (not available yet because not debugged)
 - **🖼️ Image preprocessing** and **augmentation**
 - **📈 Model tracking and performance evaluation**
 - **💾 Cloud storage and database integration**
@@ -52,7 +52,7 @@ This project follows a **modular architecture** focusing on **scalability, perfo
 
 #### ☁️ Cloud Processing
 - **Cloud Function (`preprocessing.py`)**: Handles dataset preparation and augmentation.
-- **Vertex AI Pipeline** (`pipeline.py`)**: Automates training and deployment.
+- **Vertex AI Pipeline** (`pipeline.py`)**: Automates training and deployment. (not available yet because not debugged)
 
 #### 📊 Data Management
 - **Cloud Storage (GCS)**: Stores images and trained models.
