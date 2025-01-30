@@ -3,9 +3,7 @@ from kfp.v2 import dsl
 from kfp.v2.dsl import component, Model, Output, Dataset, Metrics, Input
 from google.cloud import aiplatform
 
-PROJECT_ID = "cat-dog-detection-449208"
-REGION = "europe-west3"
-BUCKET_NAME = "original-dataset-cat-dog"
+from load_config.config import PROJECT_ID, REGION, BUCKET_NAME
 
 # Initialize Vertex AI
 aiplatform.init(project=PROJECT_ID, location=REGION)
