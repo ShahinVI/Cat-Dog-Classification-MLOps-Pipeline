@@ -269,7 +269,7 @@ def start_training():
             )
 
         pipeline_job.submit()
-        print("✅ Vertex AI Pipeline triggered!")
+        print("Vertex AI Pipeline triggered!")
 
         return jsonify({"message": "Pipeline started in Vertex AI!"})
     
@@ -294,12 +294,12 @@ def evaluate_model():
             pipeline_func=pipeline_func,
             package_path=COMPILED_JSON_PATH
         )
-        print("✅ Pipeline compiled successfully")
+        print("Pipeline compiled successfully")
         
         # Upload the compiled pipeline
         blob = bucket.blob(f"pipelines/{file_json}.json")
         blob.upload_from_filename(COMPILED_JSON_PATH)
-        print("✅ Pipeline uploaded to GCS")
+        print("Pipeline uploaded to GCS")
         
         # Run the pipeline
         aiplatform.init(project=PROJECT_ID, location=REGION)
@@ -309,7 +309,7 @@ def evaluate_model():
             pipeline_root=PIPELINE_ROOT
         )
         pipeline_job.submit()
-        print("✅ Pipeline job submitted")
+        print("Pipeline job submitted")
         
         return jsonify({
             "status": "success",
@@ -318,7 +318,7 @@ def evaluate_model():
         })
         
     except Exception as e:
-        print(f"❌ Error in evaluate_model: {str(e)}")
+        print(f"Error in evaluate_model: {str(e)}")
         return jsonify({
             "status": "error",
             "error": str(e)

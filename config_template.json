@@ -1,0 +1,13 @@
+{
+    "DATABASE_URL": "mysql+mysqlconnector://user:password@host:port/database_name",
+    "GOOGLE_APPLICATION_CREDENTIALS": "json_files/service_user_api_key.json",
+    "PROJECT_ID": "project_id",
+    "BUCKET_NAME": "bucket_name",
+    "PIPELINE_ROOT": "gs://bucket_name/pipelines/",
+    "UPLOAD_FOLDER": "pipelines/uploads",
+    "CLOUD_FUNCTION_URL": "https://europe-west3-project_id.cloudfunctions.net/preprocess_dataset",
+    "TRAIN_LOCAL": true,
+    "REGION": "europe-west3",
+    "COMPILED_JSON_PATH_LOCAL": "pipelines/json_pipeline/model_management.json",
+    "COMPILED_JSON_PATH_VERTEX": "pipelines/json_pipeline/pipeline.json"
+  }
