@@ -10,6 +10,7 @@ import traceback
 import logging
 import time
 from load_config.config import BUCKET_NAME
+
 def process_dataset(label_list, train_split, valid_split, test_split, 
                    image_size, rotate_90, rotate_180, rotate_270, greyscale):
     # Setup logging
